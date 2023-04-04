@@ -12,16 +12,21 @@ class MainViewModel : ViewModel() {
     val _imageUri = MutableStateFlow<Uri?>(null)
     val imageUri : StateFlow<Uri?> = _imageUri.asStateFlow()
 
-    val _imageBitmap = MutableStateFlow<Bitmap?>(null)
-    val imageBitmap : StateFlow<Bitmap?> = _imageBitmap.asStateFlow()
+    val _targetImageBitmap = MutableStateFlow<Bitmap?>(null)
+    val targetImageBitmap : StateFlow<Bitmap?> = _targetImageBitmap.asStateFlow()
+
+    val _stylingImageBitmap = MutableStateFlow<Bitmap?>(null)
+    val stylingImageBitmap : StateFlow<Bitmap?> = _stylingImageBitmap.asStateFlow()
 
     fun updateImageUri(uri: Uri) {
         _imageUri.value = uri
     }
 
-    fun updateImageBitmap(bitmap: Bitmap) {
-        _imageBitmap.value = bitmap
+    fun updateTargetImageBitmap(bitmap: Bitmap) {
+        _targetImageBitmap.value = bitmap
     }
 
-
+    fun updateStylingImageBitmap(bitmap: Bitmap) {
+        _stylingImageBitmap.value = bitmap
+    }
 }

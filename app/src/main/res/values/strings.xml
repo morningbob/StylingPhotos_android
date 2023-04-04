@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Styling Photos</string>
+    <string name="upload_target_photo">Upload Target Photo</string>
+    <string name="upload_styling_photo">Upload Styling Photo</string>
 </resources>
