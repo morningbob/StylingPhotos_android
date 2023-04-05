@@ -43,11 +43,12 @@ import com.bitpunchlab.android.stylingphotos.ui.theme.StylingScheme
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun MainScreen(
-    mainViewModel: MainViewModel = MainViewModel()
+    mainViewModel: MainViewModel
 ) {
 
     val targetBitmap by mainViewModel.targetImageBitmap.collectAsState()
-    val stylingBitmap by mainViewModel._stylingImageBitmap.collectAsState()
+    val stylingBitmap by mainViewModel.stylingImageBitmap.collectAsState()
+    val resultBitmap by mainViewModel.resultBitmap.collectAsState()
 
     var photoType = PhotoType.TARGET_PHOTO
 
@@ -83,6 +84,10 @@ fun MainScreen(
         pickImageLauncher.launch("image/*")
     }
 
+    val transformClicked = {
+        mainViewModel.transformImage()
+    }
+
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -113,6 +118,16 @@ fun MainScreen(
                             .size(200.dp)
                     )
 
+                    if (resultBitmap != null) {
+                        Image(
+                            bitmap = resultBitmap!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
                     AppButton(
                         content = stringResource(id = R.string.upload_target_photo),
                         textSize = 20.sp,
@@ -128,6 +143,15 @@ fun MainScreen(
                         modifier = Modifier
                         //.padding(top = 20.dp)
                     )
+
+                    if (targetBitmap != null && stylingBitmap != null) {
+                        AppButton(
+                            content = "Transform",
+                            textSize = 20.sp,
+                            onClickListener = transformClicked,
+                            modifier = Modifier
+                        )
+                    }
 
                     if (targetBitmap != null) {
                         val imageBitmap = targetBitmap!!.asImageBitmap()
