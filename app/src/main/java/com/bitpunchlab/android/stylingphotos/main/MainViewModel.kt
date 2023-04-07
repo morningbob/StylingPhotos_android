@@ -11,11 +11,12 @@ import com.bitpunchlab.android.stylingphotos.processPhoto.StyleTransferHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.tensorflow.lite.support.image.TensorImage
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    val _imageUri = MutableStateFlow<Uri?>(null)
-    val imageUri : StateFlow<Uri?> = _imageUri.asStateFlow()
+    //val _imageUri = MutableStateFlow<Uri?>(null)
+    //val imageUri : StateFlow<Uri?> = _imageUri.asStateFlow()
 
     val _targetImageBitmap = MutableStateFlow<Bitmap?>(null)
     val targetImageBitmap : StateFlow<Bitmap?> = _targetImageBitmap.asStateFlow()
@@ -28,9 +29,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _resultBitmap = MutableStateFlow<Bitmap?>(null)
     val resultBitmap : StateFlow<Bitmap?> = _resultBitmap.asStateFlow()
 
-    fun updateImageUri(uri: Uri) {
-        _imageUri.value = uri
-    }
+    val _testPredictBitmap = MutableStateFlow<Bitmap?>(null)
+    val testPredictBitmap : StateFlow<Bitmap?> = _testPredictBitmap.asStateFlow()
+
+    val _testTransformBitmap = MutableStateFlow<Bitmap?>(null)
+    val testTransformBitmap : StateFlow<Bitmap?> = _testTransformBitmap.asStateFlow()
+
+    val _beforeTestPredict = MutableStateFlow<Bitmap?>(null)
+    val beforeTestPredict : StateFlow<Bitmap?> = _beforeTestPredict.asStateFlow()
+
+    val _beforeTestTransform = MutableStateFlow<Bitmap?>(null)
+    val beforeTestTransform : StateFlow<Bitmap?> = _beforeTestTransform.asStateFlow()
+
+    //fun updateImageUri(uri: Uri) {
+    //    _imageUri.value = uri
+    //}
 
     fun updateTargetImageBitmap(bitmap: Bitmap) {
         _targetImageBitmap.value = bitmap
@@ -41,16 +54,29 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun transformImage() {
-        if (stylingImageBitmap.value != null && targetImageBitmap.value != null) {
-            val styleImage = stylingHelper.preprocessImage(stylingImageBitmap.value!!)
-            val predictBuffer = stylingHelper.predict(styleImage)
-            val targetImage = stylingHelper.preprocessImage(targetImageBitmap.value!!)
-            if (predictBuffer != null) {
-                _resultBitmap.value = stylingHelper.transform(targetImage, predictBuffer)
-            } else {
-                Log.i("transform image", "can't get prediction from styling photo")
-            }
+        if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
+            _resultBitmap.value = stylingHelper.preprocessAndTransform(targetImageBitmap.value!!, stylingImageBitmap.value!!)
         }
+    }
+
+    fun testPreprocess() {
+        if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
+            _beforeTestPredict.value = stylingImageBitmap.value!!
+            _beforeTestTransform.value = targetImageBitmap.value
+            val result = stylingHelper.testPreprocessImage(targetImageBitmap.value!!, stylingImageBitmap.value!!)
+            _testPredictBitmap.value = result.first.bitmap
+            _testTransformBitmap.value = result.second.bitmap
+        }
+    }
+
+    fun testPreprocessBitmap() {
+        _beforeTestPredict.value = stylingHelper.preprocessBitmap(stylingImageBitmap.value!!)
+    }
+
+    fun testTensorImage() {
+        _beforeTestPredict.value = stylingHelper
+            .testPreprocessImageAndLoadTensorImage(stylingImageBitmap.value!!)
+            .bitmap
     }
  }
 

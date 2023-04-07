@@ -49,6 +49,10 @@ fun MainScreen(
     val targetBitmap by mainViewModel.targetImageBitmap.collectAsState()
     val stylingBitmap by mainViewModel.stylingImageBitmap.collectAsState()
     val resultBitmap by mainViewModel.resultBitmap.collectAsState()
+    val testPredict by mainViewModel.testPredictBitmap.collectAsState()
+    val testTransform by mainViewModel.testTransformBitmap.collectAsState()
+    val beforePredict by mainViewModel.beforeTestPredict.collectAsState()
+    val beforeTransform by mainViewModel.beforeTestTransform.collectAsState()
 
     var photoType = PhotoType.TARGET_PHOTO
 
@@ -57,7 +61,7 @@ fun MainScreen(
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            mainViewModel.updateImageUri(uri)
+            //mainViewModel.updateImageUri(uri)
             val bitmap = RetrievePhotosHelper.getBitmap(uri, screenContext)
             bitmap?.let {
                 Log.i("launcher", "got bitmap")
@@ -118,9 +122,49 @@ fun MainScreen(
                             .size(200.dp)
                     )
 
+                    if (beforePredict != null) {
+                        Image(
+                            bitmap = beforePredict!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
+                    if (beforeTransform != null) {
+                        Image(
+                            bitmap = beforeTransform!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
                     if (resultBitmap != null) {
                         Image(
                             bitmap = resultBitmap!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
+                    if (testPredict != null) {
+                        Image(
+                            bitmap = testPredict!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
+                    if (testTransform != null) {
+                        Image(
+                            bitmap = testTransform!!.asImageBitmap(),
                             contentDescription = "The output photo.",
                             modifier = Modifier
                                 .padding(top = 20.dp, bottom = 20.dp)
