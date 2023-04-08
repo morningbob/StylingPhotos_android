@@ -15,9 +15,6 @@ import org.tensorflow.lite.support.image.TensorImage
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    //val _imageUri = MutableStateFlow<Uri?>(null)
-    //val imageUri : StateFlow<Uri?> = _imageUri.asStateFlow()
-
     val _targetImageBitmap = MutableStateFlow<Bitmap?>(null)
     val targetImageBitmap : StateFlow<Bitmap?> = _targetImageBitmap.asStateFlow()
 
@@ -29,7 +26,42 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val _resultBitmap = MutableStateFlow<Bitmap?>(null)
     val resultBitmap : StateFlow<Bitmap?> = _resultBitmap.asStateFlow()
 
-    val _testPredictBitmap = MutableStateFlow<Bitmap?>(null)
+    val _selectedContentRatio = MutableStateFlow<Int>(0)
+    val selectedContentRatio : StateFlow<Int> = _selectedContentRatio.asStateFlow()
+
+    fun updateTargetImageBitmap(bitmap: Bitmap) {
+        _targetImageBitmap.value = bitmap
+    }
+
+    fun updateStylingImageBitmap(bitmap: Bitmap) {
+        _stylingImageBitmap.value = bitmap
+    }
+
+    fun updateContentRatio(ratio: Int) {
+        _selectedContentRatio.value = ratio
+    }
+
+    fun transformImage() {
+        if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
+            _resultBitmap.value =
+                stylingHelper.preprocessAndTransform(targetImageBitmap.value!!, stylingImageBitmap.value!!)
+        }
+    }
+
+
+ }
+
+class MainViewModelFactory(private val application: Application)
+    : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+            return MainViewModel(application) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
+/*
+val _testPredictBitmap = MutableStateFlow<Bitmap?>(null)
     val testPredictBitmap : StateFlow<Bitmap?> = _testPredictBitmap.asStateFlow()
 
     val _testTransformBitmap = MutableStateFlow<Bitmap?>(null)
@@ -40,26 +72,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val _beforeTestTransform = MutableStateFlow<Bitmap?>(null)
     val beforeTestTransform : StateFlow<Bitmap?> = _beforeTestTransform.asStateFlow()
-
-    //fun updateImageUri(uri: Uri) {
-    //    _imageUri.value = uri
-    //}
-
-    fun updateTargetImageBitmap(bitmap: Bitmap) {
-        _targetImageBitmap.value = bitmap
-    }
-
-    fun updateStylingImageBitmap(bitmap: Bitmap) {
-        _stylingImageBitmap.value = bitmap
-    }
-
-    fun transformImage() {
-        if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
-            _resultBitmap.value = stylingHelper.preprocessAndTransform(targetImageBitmap.value!!, stylingImageBitmap.value!!)
-        }
-    }
-
-    fun testPreprocess() {
+fun testPreprocess() {
         if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
             _beforeTestPredict.value = stylingImageBitmap.value!!
             _beforeTestTransform.value = targetImageBitmap.value
@@ -78,14 +91,4 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .testPreprocessImageAndLoadTensorImage(stylingImageBitmap.value!!)
             .bitmap
     }
- }
-
-class MainViewModelFactory(private val application: Application)
-    : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            return MainViewModel(application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}
+ */

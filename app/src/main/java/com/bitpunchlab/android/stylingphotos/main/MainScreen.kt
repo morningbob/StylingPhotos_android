@@ -1,12 +1,6 @@
 package com.bitpunchlab.android.stylingphotos.main
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.net.Uri
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Space
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -20,9 +14,8 @@ import androidx.compose.material.OutlinedButton
 import androidx.compose.material.Scaffold
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
@@ -36,9 +29,11 @@ import androidx.compose.ui.unit.sp
 import com.bitpunchlab.android.stylingphotos.Main
 import com.bitpunchlab.android.stylingphotos.R
 import com.bitpunchlab.android.stylingphotos.base.AppButton
+import com.bitpunchlab.android.stylingphotos.base.AppSlider
 import com.bitpunchlab.android.stylingphotos.helpers.PhotoType
 import com.bitpunchlab.android.stylingphotos.retrievePhotos.RetrievePhotosHelper
 import com.bitpunchlab.android.stylingphotos.ui.theme.StylingScheme
+
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
@@ -49,10 +44,7 @@ fun MainScreen(
     val targetBitmap by mainViewModel.targetImageBitmap.collectAsState()
     val stylingBitmap by mainViewModel.stylingImageBitmap.collectAsState()
     val resultBitmap by mainViewModel.resultBitmap.collectAsState()
-    val testPredict by mainViewModel.testPredictBitmap.collectAsState()
-    val testTransform by mainViewModel.testTransformBitmap.collectAsState()
-    val beforePredict by mainViewModel.beforeTestPredict.collectAsState()
-    val beforeTransform by mainViewModel.beforeTestTransform.collectAsState()
+    val selectedContentRatio by mainViewModel.selectedContentRatio.collectAsState()
 
     var photoType = PhotoType.TARGET_PHOTO
 
@@ -61,7 +53,6 @@ fun MainScreen(
     val pickImageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            //mainViewModel.updateImageUri(uri)
             val bitmap = RetrievePhotosHelper.getBitmap(uri, screenContext)
             bitmap?.let {
                 Log.i("launcher", "got bitmap")
@@ -95,12 +86,10 @@ fun MainScreen(
     Surface(
         modifier = Modifier
             .fillMaxSize()
-
     ) {
 
         Scaffold(
             modifier = Modifier
-                //.background(StylingScheme.greenBackground),
         ) {
             Column(
                 modifier = Modifier
@@ -122,73 +111,65 @@ fun MainScreen(
                             .size(200.dp)
                     )
 
-                    if (beforePredict != null) {
-                        Image(
-                            bitmap = beforePredict!!.asImageBitmap(),
-                            contentDescription = "The output photo.",
-                            modifier = Modifier
-                                .padding(top = 20.dp, bottom = 20.dp)
-                                .size(200.dp)
-                        )
-                    }
+                    Row(
+                        modifier = Modifier,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
 
-                    if (beforeTransform != null) {
-                        Image(
-                            bitmap = beforeTransform!!.asImageBitmap(),
-                            contentDescription = "The output photo.",
+                        AppButton(
+                            content = stringResource(id = R.string.upload_target_photo),
+                            textSize = 20.sp,
+                            onClickListener = uploadTargetOnClicked,
                             modifier = Modifier
-                                .padding(top = 20.dp, bottom = 20.dp)
-                                .size(200.dp)
+                            //.padding(top = 20.dp)
+                        )
+
+                        AppButton(
+                            content = stringResource(id = R.string.upload_styling_photo),
+                            textSize = 20.sp,
+                            onClickListener = uploadStylingOnClicked,
+                            modifier = Modifier
+                            //.padding(top = 20.dp)
                         )
                     }
+                    Text(
+                        text = "Content Blending Ratio",
+                        modifier = Modifier
+                            .padding(top = 20.dp)
+                    )
+
+                    AppSlider(
+                        initValue = selectedContentRatio.toFloat(),
+                        valueSet = { mainViewModel.updateContentRatio(it.toInt()) },
+                        valueChangeFinishedListener = {  },
+                        modifier = Modifier
+                            .padding(start = 30.dp, end = 30.dp)
+                    )
+                    Text(
+                        text = selectedContentRatio.toString(),
+                        modifier = Modifier
+                            .padding(top = 5.dp, bottom = 20.dp))
 
                     if (resultBitmap != null) {
+                        Text(
+                            text = "Result",
+                            fontSize = 20.sp,
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                        )
+
                         Image(
                             bitmap = resultBitmap!!.asImageBitmap(),
                             contentDescription = "The output photo.",
                             modifier = Modifier
                                 .padding(top = 20.dp, bottom = 20.dp)
-                                .size(200.dp)
+                                .size(300.dp),
+                            contentScale = ContentScale.FillWidth
                         )
                     }
-
-                    if (testPredict != null) {
-                        Image(
-                            bitmap = testPredict!!.asImageBitmap(),
-                            contentDescription = "The output photo.",
-                            modifier = Modifier
-                                .padding(top = 20.dp, bottom = 20.dp)
-                                .size(200.dp)
-                        )
-                    }
-
-                    if (testTransform != null) {
-                        Image(
-                            bitmap = testTransform!!.asImageBitmap(),
-                            contentDescription = "The output photo.",
-                            modifier = Modifier
-                                .padding(top = 20.dp, bottom = 20.dp)
-                                .size(200.dp)
-                        )
-                    }
-
-                    AppButton(
-                        content = stringResource(id = R.string.upload_target_photo),
-                        textSize = 20.sp,
-                        onClickListener = uploadTargetOnClicked,
-                        modifier = Modifier
-                        //.padding(top = 20.dp)
-                    )
-
-                    AppButton(
-                        content = stringResource(id = R.string.upload_styling_photo),
-                        textSize = 20.sp,
-                        onClickListener = uploadStylingOnClicked,
-                        modifier = Modifier
-                        //.padding(top = 20.dp)
-                    )
 
                     if (targetBitmap != null && stylingBitmap != null) {
+
                         AppButton(
                             content = "Transform",
                             textSize = 20.sp,
@@ -198,6 +179,12 @@ fun MainScreen(
                     }
 
                     if (targetBitmap != null) {
+                        Text(
+                            text = "Target Photo",
+                            fontSize = 20.sp,
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                        )
                         val imageBitmap = targetBitmap!!.asImageBitmap()
                         Image(
                             bitmap = imageBitmap,
@@ -216,6 +203,12 @@ fun MainScreen(
                     Spacer(modifier = Modifier.padding(top = 20.dp))
 
                     if (stylingBitmap != null) {
+                        Text(
+                            text = "Styling Photo",
+                            fontSize = 20.sp,
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                        )
                         //val stylingPainter = painterResource(id = R.mipmap.picture)
                         val imageBitmap = stylingBitmap!!.asImageBitmap()
 
@@ -241,3 +234,47 @@ fun MainScreen(
 
     }
 }
+/*
+val testPredict by mainViewModel.testPredictBitmap.collectAsState()
+    val testTransform by mainViewModel.testTransformBitmap.collectAsState()
+    val beforePredict by mainViewModel.beforeTestPredict.collectAsState()
+    val beforeTransform by mainViewModel.beforeTestTransform.collectAsState()
+    if (beforePredict != null) {
+                        Image(
+                            bitmap = beforePredict!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
+                    if (beforeTransform != null) {
+                        Image(
+                            bitmap = beforeTransform!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+    if (testPredict != null) {
+                        Image(
+                            bitmap = testPredict!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+
+                    if (testTransform != null) {
+                        Image(
+                            bitmap = testTransform!!.asImageBitmap(),
+                            contentDescription = "The output photo.",
+                            modifier = Modifier
+                                .padding(top = 20.dp, bottom = 20.dp)
+                                .size(200.dp)
+                        )
+                    }
+ */
