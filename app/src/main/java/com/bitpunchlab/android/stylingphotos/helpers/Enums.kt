@@ -4,3 +4,8 @@ enum class PhotoType {
     TARGET_PHOTO,
     STYLING_PHOTO
 }
+
+enum class TensorOperation {
+    SCALE,
+    PLUS
+}

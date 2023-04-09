@@ -3,6 +3,7 @@ package com.bitpunchlab.android.stylingphotos.processPhoto
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import com.bitpunchlab.android.stylingphotos.helpers.TensorOperation
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.Interpreter
@@ -53,7 +54,7 @@ class StyleTransferHelper(
         }
     }
 
-    fun setup() : Boolean {
+    private fun setup() : Boolean {
         val tfLiteOptions = Interpreter.Options()
         tfLiteOptions.numThreads = 2
 
@@ -107,34 +108,7 @@ class StyleTransferHelper(
         return bitmap.copy(Bitmap.Config.ARGB_8888, true)
     }
 
-    fun testPreprocessImageAndLoadTensorImage(bitmap: Bitmap) : TensorImage {
-        val processedBitmap = preprocessBitmap(bitmap)
 
-        val tensorImage = TensorImage(DataType.FLOAT32)
-        tensorImage.load(processedBitmap)
-        return tensorImage
-
-    }
-
-    fun testPreprocessImage(targetImage: Bitmap, stylingImage: Bitmap) : Pair<TensorImage, TensorImage> {
-        //if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
-        val testPredictBitmap = preprocessImage(stylingImage, inputPredictTargetHeight, inputPredictTargetWidth)
-        val testTransformBitmap = preprocessImage(targetImage, inputTransformTargetHeight, inputTransformTargetWidth)
-        return Pair(testPredictBitmap, testTransformBitmap)
-        //}
-    }
-
-    fun preprocessAndTransform(targetBitmap: Bitmap, stylingBitmap: Bitmap) : Bitmap? {
-        val styleImage = preprocessImage(stylingBitmap, inputPredictTargetHeight, inputPredictTargetWidth)
-        val predictBuffer = predict(styleImage)
-        val targetImage = preprocessImage(targetBitmap, inputTransformTargetHeight, inputTransformTargetWidth)
-        if (predictBuffer != null) {
-            return transform(targetImage, predictBuffer)
-        } else {
-            Log.i("transform image", "can't get prediction from styling photo")
-            return null
-        }
-    }
     fun predict(styleTensor: TensorImage) : TensorBuffer? {
         val predictOutput = TensorBuffer.createFixedSize(outputPredictShape, DataType.FLOAT32)
 
@@ -146,6 +120,32 @@ class StyleTransferHelper(
             Log.i("predict", "null interpreter")
             return null
         }
+    }
+
+    fun applyContentBlendingRatio(targetBitmap: Bitmap, stylingBitmap: Bitmap, contentRatio: Int) : Bitmap? {
+        val styleImage = preprocessImage(stylingBitmap, inputPredictTargetHeight, inputPredictTargetWidth)
+        val styleBottleneck = predict(styleImage)
+        Log.i("apply content ratio", "ratio: $contentRatio")
+        // cal style bottleneck
+        val styleBottleneckContent = predict(preprocessImage(
+            targetBitmap,
+            inputPredictTargetHeight,
+            inputPredictTargetWidth))
+
+        val styleBottleneckBlended_1 = scaleTensor(styleBottleneckContent!!, null,
+            outputPredictShape, contentRatio,
+            TensorOperation.SCALE)
+        val styleBottleneckBlended_2 = scaleTensor(styleBottleneck!!, null,
+            outputPredictShape, 100 - contentRatio,
+            TensorOperation.SCALE)
+        val styleBottleneckBlended = scaleTensor(styleBottleneckBlended_1, styleBottleneckBlended_2,
+            outputPredictShape, contentRatio, TensorOperation.PLUS)
+        // apply the formula
+
+        val targetImage = preprocessImage(targetBitmap, inputTransformTargetHeight, inputTransformTargetWidth)
+
+        return transform(targetImage, styleBottleneckBlended)
+
     }
 
     fun transform(targetTensor: TensorImage, styleBuffer: TensorBuffer) : Bitmap? {
@@ -180,7 +180,43 @@ class StyleTransferHelper(
         tensorImage.load(resultTensor)
 
         return imageProcessor.process(tensorImage).bitmap
+    }
 
+    private fun scaleTensor(tensorBuffer_one: TensorBuffer, tensorBuffer_two: TensorBuffer?,
+                            shape: IntArray, ratio: Int,
+        operation: TensorOperation) : TensorBuffer {
+        Log.i("scale tensor", "tensor type: ${tensorBuffer_one.dataType}")
+        Log.i("scale tensor", "ratio got: ${ratio.toDouble()/100}")
+        var dataList = listOf<Float>()
+
+        when (operation) {
+            TensorOperation.SCALE -> {
+                dataList = tensorBuffer_one.floatArray.map { each ->
+                    (each * (ratio.toDouble()/100)).toFloat()
+                }
+            }
+            TensorOperation.PLUS -> {
+                if (tensorBuffer_two != null) {
+                    val resultList = ArrayList<Float>()
+                    val arrayOne = tensorBuffer_one.floatArray
+                    val arrayTwo = tensorBuffer_two.floatArray
+                    for (i in 0 until arrayOne.size) {
+                        resultList.add(arrayOne[i] + arrayTwo[i])
+                    }
+                    dataList = resultList
+                }
+            }
+        }
+
+        val dataArray = dataList.toFloatArray()
+
+        val dataBuffer = TensorBuffer.createFixedSize(
+            shape, DataType.FLOAT32
+        )
+
+        dataBuffer.loadArray(dataArray)
+        Log.i("scale tensor", "got back buffer")
+        return dataBuffer
     }
 
 }
@@ -190,13 +226,32 @@ interface StyleTransferListener {
     fun onResult()
 }
 /*
-private fun loadModelFile(filename: String): MappedByteBuffer? {
-    val fileDescriptor = context.assets.openFd(filename)
-    val fileInputStream = FileInputStream(fileDescriptor.fileDescriptor)
-    val fileChannel = fileInputStream.channel
-    val startOffset = fileDescriptor.startOffset
-    val declareLength = fileDescriptor.declaredLength
-    return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declareLength)
+fun testPreprocessImageAndLoadTensorImage(bitmap: Bitmap) : TensorImage {
+    val processedBitmap = preprocessBitmap(bitmap)
+
+    val tensorImage = TensorImage(DataType.FLOAT32)
+    tensorImage.load(processedBitmap)
+    return tensorImage
+
 }
 
- */
+fun testPreprocessImage(targetImage: Bitmap, stylingImage: Bitmap) : Pair<TensorImage, TensorImage> {
+    //if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
+    val testPredictBitmap = preprocessImage(stylingImage, inputPredictTargetHeight, inputPredictTargetWidth)
+    val testTransformBitmap = preprocessImage(targetImage, inputTransformTargetHeight, inputTransformTargetWidth)
+    return Pair(testPredictBitmap, testTransformBitmap)
+    //}
+}
+
+fun preprocessAndTransform(targetBitmap: Bitmap, stylingBitmap: Bitmap) : Bitmap? {
+    val styleImage = preprocessImage(stylingBitmap, inputPredictTargetHeight, inputPredictTargetWidth)
+    val predictBuffer = predict(styleImage)
+    val targetImage = preprocessImage(targetBitmap, inputTransformTargetHeight, inputTransformTargetWidth)
+    if (predictBuffer != null) {
+        return transform(targetImage, predictBuffer)
+    } else {
+        Log.i("transform image", "can't get prediction from styling photo")
+        return null
+    }
+}
+*/

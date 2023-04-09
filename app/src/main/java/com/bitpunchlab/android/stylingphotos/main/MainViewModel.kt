@@ -44,7 +44,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun transformImage() {
         if (targetImageBitmap.value != null && stylingImageBitmap.value != null) {
             _resultBitmap.value =
-                stylingHelper.preprocessAndTransform(targetImageBitmap.value!!, stylingImageBitmap.value!!)
+                //stylingHelper.preprocessAndTransform(targetImageBitmap.value!!, stylingImageBitmap.value!!)
+                stylingHelper.applyContentBlendingRatio(
+                    targetImageBitmap.value!!, stylingImageBitmap.value!!,
+                    selectedContentRatio.value)
         }
     }
 
