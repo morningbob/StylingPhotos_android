@@ -52,9 +52,10 @@ fun AppSlider(initValue: Float, valueSet: (Float) -> Unit, valueChangeFinishedLi
         value = sliderValue,
         onValueChange = {
             sliderValue = it
+            valueSet.invoke(sliderValue)
         },
         valueRange = 0f..100f,
-        onValueChangeFinished = { valueSet.invoke(sliderValue) },
+        onValueChangeFinished = { },//valueSet.invoke(sliderValue) },
         interactionSource = remember { MutableInteractionSource() },
         enabled = true,
         steps = 20,
